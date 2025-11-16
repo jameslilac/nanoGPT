@@ -236,7 +236,7 @@ class GPT(nn.Module):
         # create a from-scratch initialized minGPT model
         config = GPTConfig(**config_args)
         model = GPT(config)
-        sd = model.state_dict() # dict containing {param keys: weight tensors}
+        sd = model.state_dict() # JL note: dict containing {param keys: weight tensors}
         sd_keys = sd.keys()
         sd_keys = [k for k in sd_keys if not k.endswith('.attn.bias')] # discard this mask / buffer, not a param
 
@@ -273,8 +273,8 @@ class GPT(nn.Module):
         param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
         # create optim groups. Any parameters that is 2D will be weight decayed, otherwise no.
         # i.e. all weight tensors in matmuls + embeddings decay, all biases and layernorms don't.
-        decay_params = [p for n, p in param_dict.items() if p.dim() >= 2]
-        nodecay_params = [p for n, p in param_dict.items() if p.dim() < 2]
+        decay_params = [p for n, p in param_dict.items() if p.dim() >= 2] 
+        nodecay_params = [p for n, p in param_dict.items() if p.dim() < 2] # weights that are 1D i.e., bias, layernorm weights. Returns list of param tensors
         optim_groups = [
             {'params': decay_params, 'weight_decay': weight_decay},
             {'params': nodecay_params, 'weight_decay': 0.0}
@@ -287,7 +287,8 @@ class GPT(nn.Module):
         fused_available = 'fused' in inspect.signature(torch.optim.AdamW).parameters
         use_fused = fused_available and device_type == 'cuda'
         extra_args = dict(fused=True) if use_fused else dict()
-        optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=betas, **extra_args)
+        # JL Note: Adam with weight decay (AdamW) decouples weight decay with gradient update
+        optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=betas, **extra_args) 
         print(f"using fused AdamW: {use_fused}")
 
         return optimizer

@@ -109,7 +109,7 @@ class Block(nn.Module):
         return x # JL Note: dim (B, T, n_embed)
 
 @dataclass
-class GPTConfig:
+class GPTConfig: # JL Note: note batch size is not defined here (it's in the train.py file)
     block_size: int = 1024
     vocab_size: int = 50304 # GPT-2 vocab_size of 50257, padded up to nearest multiple of 64 for efficiency
     n_layer: int = 12
@@ -172,7 +172,7 @@ class GPT(nn.Module):
 
     def forward(self, idx, targets=None):
         device = idx.device
-        b, t = idx.size()
+        b, t = idx.size() # JL note: idx dim (B, T)
         assert t <= self.config.block_size, f"Cannot forward sequence of length {t}, block size is only {self.config.block_size}"
         pos = torch.arange(0, t, dtype=torch.long, device=device) # shape (t)
 
@@ -187,13 +187,13 @@ class GPT(nn.Module):
         if targets is not None:
             # if we are given some desired targets also calculate the loss
             logits = self.lm_head(x) # JL note: (B, T, vocab_size)
-            # view(..) reshapes logits to (BxT, vocab_size), reshapes targets to 1D tensor (BxT)
+            # JL note: view(..) reshapes logits to (BxT, vocab_size), reshapes targets to 1D tensor (BxT)
             # cross_entropy calc: 1) softmax on reshaped logits, 2) find predicted prob. indexed to ground truth position, 
             # 3) calc negative log-likelihood -log (Prob at target position). loss is a scalar
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1) 
         else:
             # inference-time mini-optimization: only forward the lm_head on the very last position
-            logits = self.lm_head(x[:, [-1], :]) # note: using list [-1] to preserve the time dim
+            logits = self.lm_head(x[:, [-1], :]) # note: using list [-1] to preserve the time dim. JL note: dim [B, 1, vocab_size]
             loss = None
 
         return logits, loss

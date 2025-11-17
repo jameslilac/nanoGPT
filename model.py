@@ -56,6 +56,7 @@ class CausalSelfAttention(nn.Module):
 
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
         # JL note: q,k,v tensor dimension: (B, T, C)
+        # JL: q,k,v do not carry additional params, they are tensor outputs of c_attn layer, where the params are held
         q, k, v  = self.c_attn(x).split(self.n_embd, dim=2)
         k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs). JL note: hs = n_embed floor divid by n_head
         q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
@@ -299,7 +300,7 @@ class GPT(nn.Module):
         # see PaLM paper Appendix B as ref: https://arxiv.org/abs/2204.02311
         # JL note: weight update FLOPS is ignored since it is N per (fwdbwd_per_iter) iterations, or N per (fwdbwd_per_iter * T) tokens
         # JL: fwdbad_per_iter to account for gradient accumulation steps
-        # JL: dense transformer ex. att 6N = 2N fwd + 4N bwd passses (per token)
+        # JL: dense transformer ex. att calc 6N = 2N fwd + 4N bwd passses (per token)
         # JL: attention 6LH * 2(QT) (per token)
         N = self.get_num_params()
         cfg = self.config

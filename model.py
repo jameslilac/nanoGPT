@@ -328,11 +328,12 @@ class GPT(nn.Module):
             # forward the model to get the logits for the index in the sequence
             logits, _ = self(idx_cond)
             # pluck the logits at the final step and scale by desired temperature
+            # JL note: deviding by temp <1 widens the gap, and steepens the distribution, vice versa
             logits = logits[:, -1, :] / temperature
             # optionally crop the logits to only the top k options
             if top_k is not None:
-                v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
-                logits[logits < v[:, [-1]]] = -float('Inf')
+                v, _ = torch.topk(logits, min(top_k, logits.size(-1))) # JL: v is a list of top k largest values in logits, in decending order
+                logits[logits < v[:, [-1]]] = -float('Inf') # JL: set logits below the k-th value to -Inf (i.e., crop out the rest)
             # apply softmax to convert logits to (normalized) probabilities
             probs = F.softmax(logits, dim=-1)
             # sample from the distribution

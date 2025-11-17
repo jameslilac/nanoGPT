@@ -298,7 +298,10 @@ while True:
             model.require_backward_grad_sync = (micro_step == gradient_accumulation_steps - 1)
         with ctx:
             logits, loss = model(X, Y)
-            loss = loss / gradient_accumulation_steps # scale the loss to account for gradient accumulation
+            # scale the loss to account for gradient accumulation
+            # JL note: gradients need to be divided by grad_accum_steps so the grad accumulation in backward work property
+            # JL: instead of dividing the gradients, same calculation to divide the loss by grad_accum_steps
+            loss = loss / gradient_accumulation_steps 
         # immediately async prefetch next batch while model is doing the forward pass on the GPU
         X, Y = get_batch('train')
         # backward pass, with gradient scaling if training in fp16

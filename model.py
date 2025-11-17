@@ -302,6 +302,7 @@ class GPT(nn.Module):
         # JL: fwdbad_per_iter to account for gradient accumulation steps
         # JL: dense transformer ex. att calc 6N = 2N fwd + 4N bwd passses (per token)
         # JL: attention 6LH * 2(QT) (per token)
+        # JL: I think for inferencing the next token, FLOP = 2N + 4LHQT
         N = self.get_num_params()
         cfg = self.config
         L, H, Q, T = cfg.n_layer, cfg.n_head, cfg.n_embd//cfg.n_head, cfg.block_size

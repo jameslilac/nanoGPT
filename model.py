@@ -297,6 +297,10 @@ class GPT(nn.Module):
         """ estimate model flops utilization (MFU) in units of A100 bfloat16 peak FLOPS """
         # first estimate the number of flops we do per iteration.
         # see PaLM paper Appendix B as ref: https://arxiv.org/abs/2204.02311
+        # JL note: weight update FLOPS is ignored since it is N per (fwdbwd_per_iter) iterations, or N per (fwdbwd_per_iter * T) tokens
+        # JL: fwdbad_per_iter to account for gradient accumulation steps
+        # JL: dense transformer ex. att 6N = 2N fwd + 4N bwd passses (per token)
+        # JL: attention 6LH * 2(QT) (per token)
         N = self.get_num_params()
         cfg = self.config
         L, H, Q, T = cfg.n_layer, cfg.n_head, cfg.n_embd//cfg.n_head, cfg.block_size
